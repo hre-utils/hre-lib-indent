@@ -12,6 +12,8 @@
 # Allow the user to specify the name of the buffer to create. Use an associative
 # array, mapping buffer name to the text string. If no name is specified, use a
 # 'default' buffer key.
+#
+# Allow "add" to take an int paramater, which indents the text that's added
 #═══════════════════════════════════════════════════════════════════════════════
 
 #──────────────────────────────────( prereqs )──────────────────────────────────
