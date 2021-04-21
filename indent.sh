@@ -18,8 +18,7 @@
 
 #──────────────────────────────────( prereqs )──────────────────────────────────
 # Version requirement: >4
-_bash_version="$( sed -E 's,^([0-9]+)\..*,\1,' <<< "${BASH_VERSION}" )"
-[[ $_bash_version -lt 4 ]] && {
+[[ ${BASH_VERSION%%.*} -lt 4 ]] && {
    echo -e "\n[${BASH_SOURCE[0]}] ERROR: Requires Bash version >= 4\n"
    exit 1
 }
@@ -27,9 +26,7 @@ _bash_version="$( sed -E 's,^([0-9]+)\..*,\1,' <<< "${BASH_VERSION}" )"
 # Verification if we've sourced this in other scripts. Name is standardized.
 # e.g., filename 'mk-conf.sh' --> '__source_mk_conf=true'
 __fname__="$( basename "${BASH_SOURCE[0]%.*}" )"
-declare $(
-      sed -E -e 's,(.*),__source_\1__,' -e 's,-,_,g' <<< "${__fname__}"
-)=true
+declare "__source_${__fname__//[^[:alnum:]]/_}__"=true
 
 
 #══════════════════════════════════╡ GLOBALS ╞══════════════════════════════════
@@ -70,11 +67,12 @@ function __buffer_push__ {
    while IFS=$'\n' read -r line ; do               # Just to be safe--
       [[ "$line" == $'\n' ]] && continue           # Cover all possible cases
       [[ "$line" == '' ]]    && continue           # in which we could have
-      [[ "$line" =~ ^\s*$ ]] && continue           # leading empty space.
+      [[ "$line" =~ ^\ *$ ]] && continue           # leading empty space.
       break   
    done <<< "$input"
    
-   local count=$(wc -w < <(sed -E -e 's,(\s*).*,\1,' -e 's,\s,. ,g' <<< "$line"))
+   local _line=${line%%[^[:space:]]*}
+   local count=$(wc -w <<< ${_line// /. })
 
    # Have to do this shit here to get around '$(...)' bash's annoying 'feature'
    # of stripping *trailing* newlines of a command. Can read into it by
@@ -93,7 +91,7 @@ function __buffer_pre_processing__ {
       $__strip_newlines__ && {
          [[ "$line" == $'\n' ]] && continue
          [[ "$line" == '' ]]    && continue
-         [[ "$line" =~ ^\s*$ ]] && continue
+         [[ "$line" =~ ^\ *$ ]] && continue
       }
 
       $__strip_comments__ && {
@@ -116,6 +114,11 @@ function __buffer_add_indentation__ {
    done
 
    sed "s,^,$spaces," <<< "$__buffer__"
+
+   # TODO: Trying to improve speed. The below is slightly faster, though we end
+   #       up with an extra newline after each buffer. Hmm.
+   #readarray -d $'\n' buffer <<< "${__buffer__}"
+   #echo -e "${buffer[@]/#/$spaces}"
 }
 
 #──────────────────────────────────( public )───────────────────────────────────
@@ -155,6 +158,7 @@ function .buf {
             __buffer_pre_processing__
             __buffer_add_indentation__ ${level:-0}
             ;;
+
       oneoff)
             # For printing oneoff indented lines. Resets the buffer, prints at
             # the specified level of indentation (if applicable).
@@ -170,6 +174,7 @@ function .buf {
             __buffer_add_indentation__ ${level:-0}
             __buffer__=''
             ;;
+
       *)
             echo ".buf method '$1' does not exist."
             ;;
