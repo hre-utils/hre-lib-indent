@@ -1,6 +1,4 @@
 #!/bin/bash
-# indent.sh
-#
 # Takes strings of texts, appends to a single-line string to allow for parsing
 # with only a single call to `sed`. Hopefully improving speed.
 #
